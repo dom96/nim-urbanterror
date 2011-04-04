@@ -1,20 +1,23 @@
 import sockets, strutils, strtabs, parseutils
 
 type
-  TUrbanTerror = object
+  TUrbanTerror* = object
     sock: TSocket
     rcon: string
 
-  TStatus = object
-    options: PStringTable
-    players: seq[tuple[nick, score, ping: string]]
+  TStatus* = object
+    options*: PStringTable
+    players*: seq[tuple[nick, score, ping: string]] ## Players currently online 
+                                                    ## on the server.
 
-  EUrbanTerror = object of ESynch
+  EUrbanTerror* = object of ESynch
 
 const
   magic = "\xFF\xFF\xFF\xFF"
 
-proc connect*(address: string, rcon: string = "", port: int = 27960): TUrbanTerror =
+proc connect*(address: string, rcon: string = "", 
+              port: int = 27960): TUrbanTerror =
+  ## Connects to an Urban Terror server at ``address``:``port``.  
   result.sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
   assert(result.sock != InvalidSocket)
   result.sock.connect(address, TPort(port))
@@ -22,6 +25,8 @@ proc connect*(address: string, rcon: string = "", port: int = 27960): TUrbanTerr
   result.rcon = rcon
 
 proc sendCommand*(urt: TUrbanTerror, command: string): string =
+  ## Sends string ``command`` to server. Returns the reply.
+  
   # Send:
   urt.sock.send(magic & command & "\n")
   # Receive:
@@ -41,6 +46,7 @@ proc skipUntil(s: string, token: char, start = 0): int =
 proc parseStatus*(msg: string): TStatus =
   ## Parses a status message giving a string table of server options and a list
   ## of players; their scores and ping.
+  ## Throws `EUrbanTerror` when ``msg`` is not a status response.
 
   result.options = newStringTable(modeCaseInsensitive)
   result.players = @[]
@@ -88,6 +94,8 @@ proc parseStatus*(msg: string): TStatus =
     result.players.add((nick, score, ping))
 
 proc getStatus*(urt: TUrbanTerror): TStatus =
+  ## Sends a "getstatus" command to the server and then parses the result with
+  ## ``parseStatus``.
   return parseStatus(urt.sendCommand("getstatus"))
 
 when isMainModule:
