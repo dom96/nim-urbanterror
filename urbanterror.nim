@@ -18,7 +18,7 @@ const
 proc connect*(address: string, rcon: string = "", 
               port: int = 27960): TUrbanTerror =
   ## Connects to an Urban Terror server at ``address``:``port``.  
-  result.sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+  result.sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP, buffered = false)
   assert(result.sock != InvalidSocket)
   result.sock.connect(address, TPort(port))
 
@@ -34,15 +34,6 @@ proc sendCommand*(urt: TUrbanTerror, command: string): string =
   assert urt.sock.recv(addr(line), 2048) != 0
   return $line
 
-proc skipUntil(s: string, token: char, start = 0): int =
-  ## Skips all characters until \ or \r or \L is found. Returns number of
-  ## characters skipped.
-  var i = start
-  while True:
-    if s[i] == token or s[i] == '\c' or s[i] == '\L':
-      return i - start
-    inc(i)
-    
 proc parseStatus*(msg: string): TStatus =
   ## Parses a status message giving a string table of server options and a list
   ## of players; their scores and ping.
@@ -60,13 +51,13 @@ proc parseStatus*(msg: string): TStatus =
     # Skip \
     inc(i)
     # Skip until next \
-    var keyLen = msg.skipUntil('\\', i)
+    var keyLen = msg.skipUntil({'\c', '\L', '\\'}, i)
     var key = copy(msg, i, keyLen + i - 1)
     inc(i, keyLen)
     # Skip \
     inc(i)
     # Skip until next \
-    var valueLen = msg.skipUntil('\\', i)
+    var valueLen = msg.skipUntil({'\c', '\L', '\\'}, i)
     var value = copy(msg, i, valueLen + i - 1)
     inc(i, valueLen)
     
@@ -79,15 +70,15 @@ proc parseStatus*(msg: string): TStatus =
     if msg[i] == '\0': break
 
     # Skip until next space
-    var scoreLen = msg.skipUntil(' ', i)
+    var scoreLen = msg.skipUntil({'\c', '\L', ' '}, i)
     var score = msg.copy(i, scoreLen + i - 1)
     inc(i, scoreLen + 1) # Skip score plus space
 
-    var pingLen = msg.skipUntil(' ', i)
+    var pingLen = msg.skipUntil({'\c', '\L', ' '}, i)
     var ping = msg.copy(i, pingLen + i - 1)
     inc(i, pingLen + 1) # Skip ping plus space
 
-    var nickLen = msg.skipUntil('\L', i) # Nicks can have spaces.
+    var nickLen = msg.skipUntil({'\c', '\L', '\L'}, i) # Nicks can have spaces.
     var nick = msg.copy(i, nickLen + i - 1)
     inc(i, nickLen + 1) # Skip nick plus space
     
@@ -99,7 +90,7 @@ proc getStatus*(urt: TUrbanTerror): TStatus =
   return parseStatus(urt.sendCommand("getstatus"))
 
 when isMainModule:
-  var urt = connect("87.98.137.207")
+  var urt = connect("games.tenthbit.net")
 
   var parsed = urt.getStatus()
   for key, value in pairs(parsed.options):
