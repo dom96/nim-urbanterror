@@ -90,7 +90,7 @@ proc getStatus*(urt: TUrbanTerror): TStatus =
   return parseStatus(urt.sendCommand("getstatus"))
 
 when isMainModule:
-  var urt = connect("188.40.128.151", port = 27960)
+  var urt = connect("188.40.128.151")
 
   var parsed = urt.getStatus()
   for key, value in pairs(parsed.options):
