@@ -52,13 +52,13 @@ proc parseStatus*(msg: string): TStatus =
     inc(i)
     # Skip until next \
     var keyLen = msg.skipUntil({'\c', '\L', '\\'}, i)
-    var key = copy(msg, i, keyLen + i - 1)
+    var key = substr(msg, i, keyLen + i - 1)
     inc(i, keyLen)
     # Skip \
     inc(i)
     # Skip until next \
     var valueLen = msg.skipUntil({'\c', '\L', '\\'}, i)
-    var value = copy(msg, i, valueLen + i - 1)
+    var value = substr(msg, i, valueLen + i - 1)
     inc(i, valueLen)
     
     result.options[key] = value
@@ -71,15 +71,15 @@ proc parseStatus*(msg: string): TStatus =
 
     # Skip until next space
     var scoreLen = msg.skipUntil({'\c', '\L', ' '}, i)
-    var score = msg.copy(i, scoreLen + i - 1)
+    var score = msg.substr(i, scoreLen + i - 1)
     inc(i, scoreLen + 1) # Skip score plus space
 
     var pingLen = msg.skipUntil({'\c', '\L', ' '}, i)
-    var ping = msg.copy(i, pingLen + i - 1)
+    var ping = msg.substr(i, pingLen + i - 1)
     inc(i, pingLen + 1) # Skip ping plus space
 
     var nickLen = msg.skipUntil({'\c', '\L', '\L'}, i) # Nicks can have spaces.
-    var nick = msg.copy(i, nickLen + i - 1)
+    var nick = msg.substr(i, nickLen + i - 1)
     inc(i, nickLen + 1) # Skip nick plus space
     
     result.players.add((nick, score, ping))
@@ -90,7 +90,7 @@ proc getStatus*(urt: TUrbanTerror): TStatus =
   return parseStatus(urt.sendCommand("getstatus"))
 
 when isMainModule:
-  var urt = connect("games.tenthbit.net")
+  var urt = connect("188.40.128.151")
 
   var parsed = urt.getStatus()
   for key, value in pairs(parsed.options):
